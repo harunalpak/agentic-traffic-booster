@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: product-service
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/agentic_products
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+aws:
+  region: ${AWS_REGION:us-east-2}
+  s3:
+    bucket: ${AWS_S3_BUCKET:atb-product-images}
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.lexo.productservice: DEBUG
+    org.springframework.web: INFO
+
+
