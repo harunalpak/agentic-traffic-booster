@@ -3,10 +3,12 @@ package com.lexo.productservice.service;
 import com.lexo.productservice.entity.Product;
 import com.lexo.productservice.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -21,17 +23,22 @@ public class ProductService {
         return productRepository.findAll();
     }
 
-    public Optional<Product> getProductById(Long id) {
+    public Optional<Product> getProductById(@NonNull Long id) {
         return productRepository.findById(id);
     }
 
-    public Product createProduct(Product product) {
-        return productRepository.save(product);
+    @NonNull
+    public Product createProduct(@NonNull Product product) {
+        return Objects.requireNonNull(productRepository.save(product), "Failed to save product");
     }
 
-    public Product updateProduct(Long id, Product updated) {
-        Product existing = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+    @NonNull
+    public Product updateProduct(@NonNull Long id, @NonNull Product updated) {
+        Product existing = Objects.requireNonNull(
+            productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found")),
+            "Product must not be null"
+        );
     
         if (updated.getTitle() != null) existing.setTitle(updated.getTitle());
         if (updated.getDescription() != null) existing.setDescription(updated.getDescription());
@@ -41,17 +48,17 @@ public class ProductService {
         if (updated.getTags() != null) existing.setTags(updated.getTags());
         if (updated.getBullets() != null) existing.setBullets(updated.getBullets());
     
-        return productRepository.save(existing);
+        return Objects.requireNonNull(productRepository.save(existing), "Failed to update product");
     }
 
-    public void deleteProduct(Long id) {
+    public void deleteProduct(@NonNull Long id) {
         if (!productRepository.existsById(id)) {
             throw new RuntimeException("Product not found with id: " + id);
         }
         productRepository.deleteById(id);
     }
 
-    public List<Product> searchProducts(String keyword) {
+    public List<Product> searchProducts(@NonNull String keyword) {
         return productRepository.findByTitleOrTagsContaining(keyword);
     }
 
