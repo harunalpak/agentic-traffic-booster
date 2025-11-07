@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -27,18 +26,14 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
-    @NonNull
     public Product createProduct(@NonNull Product product) {
-        return Objects.requireNonNull(productRepository.save(product), "Failed to save product");
+        return productRepository.save(product);
     }
 
-    @NonNull
+    @SuppressWarnings("null")
     public Product updateProduct(@NonNull Long id, @NonNull Product updated) {
-        Product existing = Objects.requireNonNull(
-            productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found")),
-            "Product must not be null"
-        );
+        Product existing = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
     
         if (updated.getTitle() != null) existing.setTitle(updated.getTitle());
         if (updated.getDescription() != null) existing.setDescription(updated.getDescription());
@@ -48,7 +43,7 @@ public class ProductService {
         if (updated.getTags() != null) existing.setTags(updated.getTags());
         if (updated.getBullets() != null) existing.setBullets(updated.getBullets());
     
-        return Objects.requireNonNull(productRepository.save(existing), "Failed to update product");
+        return productRepository.save(existing);
     }
 
     public void deleteProduct(@NonNull Long id) {
