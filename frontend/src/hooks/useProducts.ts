@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/lib/api-client';
+import { apiProducts } from '@/lib/api-client';
 import { Product, CreateProductDto, UpdateProductDto, PresignedUrlResponse } from '@/types/product';
 
 // Fetch all products
@@ -7,7 +7,7 @@ export const useProducts = () => {
   return useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: async () => {
-      const { data } = await apiClient.get<Product[]>('/products');
+      const { data } = await apiProducts.get<Product[]>('/products');
       return data;
     },
   });
@@ -18,7 +18,7 @@ export const useProduct = (id: number) => {
   return useQuery<Product>({
     queryKey: ['products', id],
     queryFn: async () => {
-      const { data } = await apiClient.get<Product>(`/products/${id}`);
+      const { data } = await apiProducts.get<Product>(`/products/${id}`);
       return data;
     },
     enabled: !!id,
@@ -30,7 +30,7 @@ export const useSearchProducts = (keyword: string) => {
   return useQuery<Product[]>({
     queryKey: ['products', 'search', keyword],
     queryFn: async () => {
-      const { data } = await apiClient.get<Product[]>(`/products/search?keyword=${encodeURIComponent(keyword)}`);
+      const { data } = await apiProducts.get<Product[]>(`/products/search?keyword=${encodeURIComponent(keyword)}`);
       return data;
     },
     enabled: keyword.length >= 2,
@@ -43,7 +43,7 @@ export const useCreateProduct = () => {
   
   return useMutation({
     mutationFn: async (product: CreateProductDto) => {
-      const { data } = await apiClient.post<Product>('/products', product);
+      const { data } = await apiProducts.post<Product>('/products', product);
       return data;
     },
     onSuccess: () => {
@@ -58,7 +58,7 @@ export const useUpdateProduct = () => {
   
   return useMutation({
     mutationFn: async ({ id, product }: { id: number; product: UpdateProductDto }) => {
-      const { data } = await apiClient.put<Product>(`/products/${id}`, product);
+      const { data } = await apiProducts.put<Product>(`/products/${id}`, product);
       return data;
     },
     onSuccess: (_, variables) => {
@@ -74,7 +74,7 @@ export const useDeleteProduct = () => {
   
   return useMutation({
     mutationFn: async (id: number) => {
-      await apiClient.delete(`/products/${id}`);
+      await apiProducts.delete(`/products/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -86,7 +86,7 @@ export const useDeleteProduct = () => {
 export const usePresignedUrl = () => {
   return useMutation({
     mutationFn: async ({ fileName, contentType }: { fileName: string; contentType?: string }) => {
-      const { data } = await apiClient.post<PresignedUrlResponse>('/products/upload-url', {
+      const { data } = await apiProducts.post<PresignedUrlResponse>('/products/upload-url', {
         fileName,
         contentType: contentType || 'image/jpeg',
       });

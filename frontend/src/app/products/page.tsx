@@ -102,6 +102,7 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-20">Image</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Created At</TableHead>
@@ -111,6 +112,19 @@ export default function ProductsPage() {
               <TableBody>
                 {filteredProducts.map((product) => (
                   <TableRow key={product.id}>
+                    <TableCell>
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.title}
+                          className="h-16 w-16 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">No image</span>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {product.title}
                     </TableCell>

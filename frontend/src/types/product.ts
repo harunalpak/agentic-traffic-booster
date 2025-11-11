@@ -27,3 +27,11 @@ export interface PresignedUrlResponse {
   presignedUrl: string;
 }
 
+// Lite version for pickers/dropdowns
+export interface ProductLite {
+  id: number;
+  title: string;
+  imageUrl?: string;
+  price?: number;
+}
+
