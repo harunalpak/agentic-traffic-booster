@@ -1,0 +1,15 @@
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+
+logging:
+  level:
+    com.atb.socialengine: DEBUG
+    org.springframework.kafka: INFO
+
+tweet:
+  scout:
+    interval: 300000 # 5 minutes for development
+

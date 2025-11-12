@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: social-engine-service
+  
+  # PostgreSQL Configuration
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/atb_social}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:secret}
+    driver-class-name: org.postgresql.Driver
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: social-engine-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+    producer:
+      acks: all
+      retries: 3
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8083}
+
+# External Services
+campaign:
+  service:
+    url: ${CAMPAIGN_SERVICE_URL:http://localhost:8082}
+
+product:
+  service:
+    url: ${PRODUCT_SERVICE_URL:http://localhost:8080}
+
+# OpenAI Configuration
+openai:
+  api:
+    key: ${OPENAI_API_KEY:sk-your-api-key-here}
+    url: ${OPENAI_API_URL:https://api.openai.com/v1/chat/completions}
+  model: ${OPENAI_MODEL:gpt-4o-mini}
+  temperature: 0.8
+  max:
+    tokens: 150
+
+# Bitly Configuration
+bitly:
+  token: ${BITLY_TOKEN:}
+  api:
+    url: https://api-ssl.bitly.com/v4/shorten
+
+# Tweet Scout Configuration
+tweet:
+  scout:
+    interval: ${TWEET_SCOUT_INTERVAL:1800000} # 30 minutes in milliseconds
+
+# Logging Configuration
+logging:
+  level:
+    com.atb.socialengine: INFO
+    org.springframework.kafka: WARN
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+

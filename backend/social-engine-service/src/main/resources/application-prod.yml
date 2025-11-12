@@ -1,0 +1,15 @@
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+logging:
+  level:
+    com.atb.socialengine: INFO
+    org.springframework.kafka: WARN
+
+tweet:
+  scout:
+    interval: 1800000 # 30 minutes
+

@@ -1,0 +1,35 @@
+{
+  "name": "tweet-scout-service",
+  "version": "1.0.0",
+  "description": "Autonomous Tweet Discovery Microservice for Agentic Traffic Booster",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "twitter",
+    "scraper",
+    "kafka",
+    "microservice"
+  ],
+  "author": "ATB Team",
+  "license": "MIT",
+  "dependencies": {
+    "@the-convocation/twitter-scraper": "^0.10.0",
+    "axios": "^1.6.2",
+    "kafkajs": "^2.2.4",
+    "node-cron": "^3.0.3",
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.3.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
