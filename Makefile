@@ -52,6 +52,6 @@ health:
 
 test-kafka:
 	docker exec atb-kafka kafka-topics --bootstrap-server localhost:9092 --list
-
+   
 test-db:
 	docker exec atb-postgres psql -U postgres -d atb_social -c "SELECT 1;"
