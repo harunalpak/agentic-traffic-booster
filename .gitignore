@@ -53,3 +53,11 @@ Thumbs.db
 application-local.yml
 application-local.properties
 
+# Environment variables (sensitive data)
+.env
+.env.local
+.env.*.local
+
+# Node modules
+node_modules/
+
