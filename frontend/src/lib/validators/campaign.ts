@@ -15,6 +15,7 @@ export const campaignBasicsSchema = z.object({
 export const twitterConfigSchema = z.object({
   minFollowerCount: z.coerce.number().int().min(0).default(0),
   hashtags: z.array(z.string()).default([]),
+  recentWindowMinutes: z.coerce.number().int().min(1).max(1440).default(15),
 });
 
 export const youtubeConfigSchema = z.object({

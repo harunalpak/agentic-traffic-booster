@@ -45,6 +45,7 @@ function TwitterConfigForm({ onNext, initialData }: { onNext: (config: any) => v
     defaultValues: {
       minFollowerCount: initialData?.minFollowerCount || 0,
       hashtags: initialData?.hashtags || [],
+      recentWindowMinutes: initialData?.recentWindowMinutes || 15,
     },
   });
 
@@ -63,6 +64,7 @@ function TwitterConfigForm({ onNext, initialData }: { onNext: (config: any) => v
     onNext({
       minFollowerCount: data.minFollowerCount,
       hashtags,
+      recentWindowMinutes: data.recentWindowMinutes,
     });
   };
 
@@ -78,6 +80,22 @@ function TwitterConfigForm({ onNext, initialData }: { onNext: (config: any) => v
         />
         {errors.minFollowerCount && (
           <p className="text-sm text-destructive">{errors.minFollowerCount.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="recentWindowMinutes">Recent Window (Minutes)</Label>
+        <Input
+          id="recentWindowMinutes"
+          type="number"
+          placeholder="e.g., 15"
+          {...register("recentWindowMinutes")}
+        />
+        <p className="text-xs text-muted-foreground">
+          Only scan tweets from the last X minutes (default: 15)
+        </p>
+        {errors.recentWindowMinutes && (
+          <p className="text-sm text-destructive">{errors.recentWindowMinutes.message}</p>
         )}
       </div>
 

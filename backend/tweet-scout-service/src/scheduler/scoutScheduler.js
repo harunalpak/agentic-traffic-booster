@@ -2,11 +2,11 @@ import cron from 'node-cron';
 import { getActiveCampaigns } from '../services/campaignClient.js';
 import { scrapeTweets, buildSearchQuery } from '../services/tweetScraper.js';
 import { publishTweets } from '../services/tweetPublisher.js';
+import { CONFIG } from '../config/search.config.js';
 import logger from '../utils/logger.js';
 
 // Get interval from environment (default: every 30 minutes)
 const SCRAPE_INTERVAL_MINUTES = parseInt(process.env.SCRAPE_INTERVAL_MINUTES || '1', 10);
-const MAX_TWEETS_PER_CAMPAIGN = parseInt(process.env.MAX_TWEETS_PER_CAMPAIGN || '10', 10);
 
 /**
  * Main tweet scouting function
@@ -53,7 +53,7 @@ async function scoutTweetsForAllCampaigns() {
         logger.info(`   Query: "${query}"`);
         
         // 3. Scrape tweets using real Twitter scraping (pass full campaign object)
-        const tweets = await scrapeTweets(query, MAX_TWEETS_PER_CAMPAIGN, campaign);
+        const tweets = await scrapeTweets(query, CONFIG.maxTweetsPerScan, campaign);
         totalTweetsFound += tweets.length;
         
         if (tweets.length === 0) {
@@ -142,7 +142,7 @@ const cronExpression = getCronExpression(SCRAPE_INTERVAL_MINUTES);
 
 logger.info(`📅 Scheduling tweet scout with cron: "${cronExpression}"`);
 logger.info(`   Interval: Every ${SCRAPE_INTERVAL_MINUTES} minutes`);
-logger.info(`   Max tweets per campaign: ${MAX_TWEETS_PER_CAMPAIGN}`);
+logger.info(`   Max tweets per campaign: ${CONFIG.maxTweetsPerScan}`);
 
 // Run immediately on startup (optional, comment out if not desired)
 if (process.env.RUN_ON_STARTUP === 'true') {

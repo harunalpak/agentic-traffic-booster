@@ -51,6 +51,18 @@ async function scrapeTweetsForCampaign(campaign) {
   try {
     logger.info(`🔍 Starting real Twitter scraping for campaign ${campaign.id}`);
     
+    // 0. Parse campaign config once at the beginning
+    let campaignConfig = campaign.config;
+    if (typeof campaignConfig === 'string') {
+      try {
+        campaignConfig = JSON.parse(campaignConfig);
+      } catch (e) {
+        logger.warn(`Failed to parse campaign config: ${e.message}`);
+        campaignConfig = {};
+      }
+    }
+    campaign.parsedConfig = campaignConfig; // Add parsed config to campaign object
+    
     // 1. Build search query from campaign data
     const keyword = buildSearchQuery(campaign);
     if (!keyword || keyword.trim() === '') {
@@ -66,7 +78,7 @@ async function scrapeTweetsForCampaign(campaign) {
     logger.info(`   Search Mode: ${modeName} (${searchMode})`);
     
     // 3. Determine tweet limit
-    const limit = campaign.dailyLimit ?? campaign.maxTweetsPerCampaign ?? CONFIG.maxTweetsPerScan;
+    const limit = CONFIG.maxTweetsPerScan;
     logger.info(`   Tweet Limit: ${limit}`);
     
     // 4. Initialize scraper with CycleTLS (create new instance for each scrape)
@@ -102,7 +114,8 @@ async function scrapeTweetsForCampaign(campaign) {
     }
     
     // 7. Apply time window filtering
-    const recentWindowMinutes = campaign.recentWindowMinutes ?? CONFIG.recentWindowMinutes;
+    const config = campaign.parsedConfig || {};
+    const recentWindowMinutes = config.recentWindowMinutes ?? campaign.recentWindowMinutes ?? CONFIG.recentWindowMinutes;
     const cutoffTime = Date.now() - (recentWindowMinutes * 60 * 1000);
     
     const recentTweets = results.filter(tweet => {
@@ -119,16 +132,33 @@ async function scrapeTweetsForCampaign(campaign) {
     }
     
     // 8. Apply follower count filtering and normalize tweet objects
-    const minFollowerCount = campaign.minFollowerCount ?? CONFIG.minFollowers;
+    const minFollowerCount = config.minFollowerCount ?? campaign.minFollowerCount ?? CONFIG.minFollowers;
     const normalizedTweets = [];
     
     logger.info(`   👥 Fetching author profiles (min followers: ${minFollowerCount})...`);
+    logger.info(`   📊 Total profiles to fetch: ${recentTweets.length}`);
     
+    let profileIndex = 0;
     for (const tweet of recentTweets) {
       try {
-        // Fetch author profile to get follower count
-        const profile = await scraper.getProfile(tweet.username);
+        profileIndex++;
+        logger.info(`   🔍 Fetching profile ${profileIndex}/${recentTweets.length}: @${tweet.username}`);
+        
+        // Fetch author profile to get follower count with timeout
+        const profileStartTime = Date.now();
+        const PROFILE_TIMEOUT = 10000; // 5 seconds timeout
+        
+        const profile = await Promise.race([
+          scraper.getProfile(tweet.username),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile fetch timeout')), PROFILE_TIMEOUT)
+          )
+        ]);
+        
+        const profileFetchTime = Date.now() - profileStartTime;
+        
         const followers = profile?.followersCount ?? 0;
+        logger.info(`   ✅ @${tweet.username} - ${followers} followers (took ${profileFetchTime}ms)`);
         
         // Filter by minimum follower count
         if (followers >= minFollowerCount) {
@@ -148,12 +178,13 @@ async function scrapeTweetsForCampaign(campaign) {
             verified: profile?.isVerified ?? false,
             profileUrl: `https://twitter.com/${tweet.username}`
           });
+          logger.info(`   ✅ Added tweet from @${tweet.username}`);
         } else {
-          logger.debug(`   Skipped @${tweet.username} (${followers} followers < ${minFollowerCount})`);
+          logger.info(`   ⏭️  Skipped @${tweet.username} (${followers} < ${minFollowerCount})`);
         }
         
       } catch (profileError) {
-        logger.warn(`   Profile fetch failed for @${tweet.username}: ${profileError.message}`);
+        logger.warn(`   ❌ Profile fetch failed for @${tweet.username}: ${profileError.message}`);
       }
     }
     
@@ -170,6 +201,16 @@ async function scrapeTweetsForCampaign(campaign) {
     logger.info(`      Raw tweets: ${results.length}`);
     logger.info(`      After time filter: ${recentTweets.length}`);
     logger.info(`      After follower filter: ${normalizedTweets.length}`);
+    
+    // Log tweet details for testing
+    if (normalizedTweets.length > 0) {
+      logger.info('   📝 Found Tweets:');
+      normalizedTweets.forEach((tweet, index) => {
+        logger.info(`      ${index + 1}. @${tweet.author} (${tweet.followers} followers)`);
+        logger.info(`         "${tweet.text.substring(0, 100)}..."`);
+        logger.info(`         🔗 ${tweet.link}`);
+      });
+    }
     
     return normalizedTweets;
     
@@ -217,16 +258,9 @@ export async function scrapeTweets(query, limit = 10, campaign = null) {
         return [];
       }
       
-      // Real scraping failed (returned null), fallback to mock
-      logger.warn('⚠️  Real scraping failed, checking fallback options...');
-      
-      if (process.env.USE_MOCK_TWEETS === 'true') {
-        logger.warn('🔄 Using mock tweets as fallback');
-        return generateMockTweets(campaign, limit);
-      } else {
-        logger.error('❌ Real scraping failed and mock tweets disabled');
-        return [];
-      }
+      // Real scraping failed (returned null)
+      logger.error('❌ Real scraping failed - returning empty results');
+      return [];
     }
     
     // Legacy mode: simple query-based scraping (backward compatibility)
@@ -261,54 +295,8 @@ export async function scrapeTweets(query, limit = 10, campaign = null) {
     
   } catch (error) {
     logger.error({ query, error: error.message }, '❌ Error scraping tweets');
-    
-    // Fallback to mock tweets if enabled
-    if (process.env.USE_MOCK_TWEETS === 'true') {
-      logger.info('⚠️  Using mock tweets as fallback');
-      return generateMockTweets(campaign || { keywords: [query] }, limit);
-    }
-    
     return [];
   }
-}
-
-/**
- * Generate mock tweets for development/testing or fallback
- * @param {Object} campaign - Campaign object
- * @param {number} limit - Number of mock tweets to generate
- * @returns {Array}
- */
-function generateMockTweets(campaign, limit = 5) {
-  const mockTweets = [];
-  const now = Date.now();
-  
-  // Extract query info from campaign
-  const query = buildSearchQuery(campaign);
-  const campaignId = campaign?.id || 0;
-  
-  for (let i = 0; i < Math.min(limit, 5); i++) {
-    const tweetTime = new Date(now - (i * 600000)); // 10 minutes apart
-    
-    mockTweets.push({
-      tweetId: `mock_${Date.now()}_${i}`,
-      campaignId: campaignId,
-      author: `mockuser_${i}`,
-      text: `Mock tweet about ${query}! Looking for recommendations. #mock #testing`,
-      createdAt: tweetTime.toISOString(),
-      link: `https://twitter.com/mockuser_${i}/status/mock_${Date.now()}_${i}`,
-      followers: 500 + (i * 100),
-      likes: Math.floor(Math.random() * 100),
-      retweets: Math.floor(Math.random() * 50),
-      replies: Math.floor(Math.random() * 20),
-      language: 'en',
-      verified: false,
-      profileUrl: `https://twitter.com/mockuser_${i}`
-    });
-  }
-  
-  logger.info(`🎭 Generated ${mockTweets.length} mock tweets for campaign ${campaignId}`);
-  
-  return mockTweets;
 }
 
 /**
@@ -317,25 +305,23 @@ function generateMockTweets(campaign, limit = 5) {
  * @returns {string}
  */
 export function buildSearchQuery(campaign) {
-  const queryParts = [];
+  // Use parsed config if available
+  const config = campaign.parsedConfig || campaign.config || {};
   
-  // Add hashtags
-  if (campaign.hashtags && campaign.hashtags.length > 0) {
-    queryParts.push(...campaign.hashtags);
+  // Get hashtags from config or root level
+  const hashtags = config.hashtags || campaign.hashtags || [];
+  
+  // If no hashtags found, return null (skip campaign)
+  if (!hashtags || hashtags.length === 0) {
+    logger.error(`❌ Campaign ${campaign.id} has no hashtags! Skipping.`);
+    return null;
   }
   
-  // Add keywords
-  if (campaign.keywords && campaign.keywords.length > 0) {
-    queryParts.push(...campaign.keywords);
-  }
+  // Join hashtags with OR for broader search
+  const query = hashtags.join(' OR ');
+  logger.info(`   🏷️  Using ${hashtags.length} hashtag(s): ${hashtags.join(', ')}`);
   
-  // Fallback to campaign name if no hashtags or keywords
-  if (queryParts.length === 0 && campaign.name) {
-    queryParts.push(campaign.name);
-  }
-  
-  // Join with OR for broader search
-  return queryParts.join(' OR ');
+  return query;
 }
 
 /**

@@ -18,8 +18,13 @@ export async function getActiveCampaigns() {
       timeout: 10000
     });
     
-    const campaigns = response.data;
-    logger.info(`✅ Retrieved ${campaigns.length} active campaigns`);
+    // Filter only ACTIVE campaigns (backend might not filter correctly)
+    const allCampaigns = response.data;
+    const campaigns = Array.isArray(allCampaigns) 
+      ? allCampaigns.filter(c => c.status === 'ACTIVE')
+      : [];
+    
+    logger.info(`✅ Retrieved ${campaigns.length} active campaigns (filtered from ${allCampaigns.length} total)`);
     
     return campaigns;
     
