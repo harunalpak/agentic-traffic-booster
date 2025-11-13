@@ -5,7 +5,7 @@ import { publishTweets } from '../services/tweetPublisher.js';
 import logger from '../utils/logger.js';
 
 // Get interval from environment (default: every 30 minutes)
-const SCRAPE_INTERVAL_MINUTES = parseInt(process.env.SCRAPE_INTERVAL_MINUTES || '30', 10);
+const SCRAPE_INTERVAL_MINUTES = parseInt(process.env.SCRAPE_INTERVAL_MINUTES || '1', 10);
 const MAX_TWEETS_PER_CAMPAIGN = parseInt(process.env.MAX_TWEETS_PER_CAMPAIGN || '10', 10);
 
 /**

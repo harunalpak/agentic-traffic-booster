@@ -18,16 +18,14 @@
   "author": "ATB Team",
   "license": "MIT",
   "dependencies": {
-    "@the-convocation/twitter-scraper": "^0.10.0",
+    "@the-convocation/twitter-scraper": "^0.20.0",
     "axios": "^1.6.2",
+    "cycletls": "^2.0.5",
+    "dotenv": "^16.3.1",
     "kafkajs": "^2.2.4",
     "node-cron": "^3.0.3",
     "pino": "^8.17.2",
-    "pino-pretty": "^10.3.1",
-    "dotenv": "^16.3.1"
-  },
-  "optionalDependencies": {
-    "cycletls": "^1.0.0"
+    "pino-pretty": "^10.3.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.5"

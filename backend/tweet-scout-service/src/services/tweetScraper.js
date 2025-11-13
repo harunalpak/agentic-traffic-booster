@@ -2,21 +2,20 @@ import { Scraper } from '@the-convocation/twitter-scraper';
 import logger from '../utils/logger.js';
 import { CONFIG, SEARCH_MODES, resolveSearchMode, getSearchModeName } from '../config/search.config.js';
 
-// Try to import CycleTLS if available (optional dependency)
-let CycleTLS = null;
+// Try to import CycleTLS from twitter-scraper package
+let cycleTLSFetch = null;
+let cycleTLSExit = null;
 let cycleTLSAvailable = false;
+
 try {
-  CycleTLS = (await import('cycletls')).default;
+  const cycleTLSModule = await import('@the-convocation/twitter-scraper/cycletls');
+  cycleTLSFetch = cycleTLSModule.cycleTLSFetch;
+  cycleTLSExit = cycleTLSModule.cycleTLSExit;
   cycleTLSAvailable = true;
   logger.info('✅ CycleTLS available for enhanced anti-bot protection');
 } catch (e) {
   logger.info('ℹ️  CycleTLS not available, using default fetch (still secure)');
 }
-
-// Track scraper instance to reuse login sessions
-let scraperInstance = null;
-let cycleTLSInstance = null;
-let isLoggedIn = false;
 
 /**
  * Validate Twitter credentials are present
@@ -41,57 +40,6 @@ function validateTwitterCredentials() {
 }
 
 /**
- * Initialize and login to Twitter scraper
- * @returns {Promise<Scraper>} Logged in scraper instance
- */
-async function getAuthenticatedScraper() {
-  try {
-    // Return existing logged-in scraper if available
-    if (scraperInstance && isLoggedIn) {
-      logger.debug('♻️  Reusing existing Twitter session');
-      return scraperInstance;
-    }
-    
-    // Validate credentials
-    if (!validateTwitterCredentials()) {
-      throw new Error('Twitter credentials not configured');
-    }
-    
-    const protectionType = cycleTLSAvailable ? 'with CycleTLS' : 'with standard protection';
-    logger.info(`🔐 Initializing Twitter scraper ${protectionType}...`);
-    
-    // Initialize scraper with optional CycleTLS for enhanced anti-bot protection
-    if (cycleTLSAvailable && !cycleTLSInstance) {
-      cycleTLSInstance = new CycleTLS();
-      scraperInstance = new Scraper({ 
-        fetch: cycleTLSInstance.fetch.bind(cycleTLSInstance)
-      });
-    } else {
-      scraperInstance = new Scraper();
-    }
-    
-    // Login to Twitter
-    logger.info('🔑 Logging into Twitter...');
-    await scraperInstance.login(
-      process.env.TWITTER_USERNAME,
-      process.env.TWITTER_PASSWORD,
-      process.env.TWITTER_EMAIL
-    );
-    
-    isLoggedIn = true;
-    logger.info(`✅ Twitter login successful (${protectionType})`);
-    
-    return scraperInstance;
-    
-  } catch (error) {
-    logger.error({ error: error.message }, '❌ Failed to authenticate with Twitter');
-    isLoggedIn = false;
-    scraperInstance = null;
-    throw error;
-  }
-}
-
-/**
  * Scrape real tweets from Twitter for a campaign
  * @param {Object} campaign - Campaign configuration
  * @returns {Promise<Array>} Array of normalized tweet objects
@@ -103,10 +51,7 @@ async function scrapeTweetsForCampaign(campaign) {
   try {
     logger.info(`🔍 Starting real Twitter scraping for campaign ${campaign.id}`);
     
-    // 1. Get authenticated scraper
-    const scraper = await getAuthenticatedScraper();
-    
-    // 2. Build search query from campaign data
+    // 1. Build search query from campaign data
     const keyword = buildSearchQuery(campaign);
     if (!keyword || keyword.trim() === '') {
       logger.warn(`⚠️  No valid search query for campaign ${campaign.id}`);
@@ -115,38 +60,48 @@ async function scrapeTweetsForCampaign(campaign) {
     
     logger.info(`   Query: "${keyword}"`);
     
-    // 3. Resolve numeric search mode
+    // 2. Resolve numeric search mode
     const searchMode = resolveSearchMode(campaign.searchMode);
     const modeName = getSearchModeName(searchMode);
     logger.info(`   Search Mode: ${modeName} (${searchMode})`);
     
-    // 4. Determine tweet limit
+    // 3. Determine tweet limit
     const limit = campaign.dailyLimit ?? campaign.maxTweetsPerCampaign ?? CONFIG.maxTweetsPerScan;
     logger.info(`   Tweet Limit: ${limit}`);
     
-    // 5. Perform real Twitter scraping
-    logger.info('   🌐 Fetching tweets from Twitter...');
-    const iterator = scraper.searchTweets(keyword, limit, searchMode);
+    // 4. Initialize scraper with CycleTLS (create new instance for each scrape)
+    const scraper = cycleTLSAvailable 
+      ? new Scraper({ fetch: cycleTLSFetch })
+      : new Scraper();
     
-    let rawCount = 0;
-    for await (const tweet of iterator) {
+    logger.info(`   🔐 Authenticating with Twitter...`);
+    
+    // 5. Login to Twitter
+    await scraper.login(
+      process.env.TWITTER_USERNAME,
+      process.env.TWITTER_PASSWORD,
+      process.env.TWITTER_EMAIL
+    );
+    
+    logger.info(`   ✅ Twitter login successful`);
+    
+    // 6. Scrape tweets
+    logger.info('   🌐 Fetching tweets from Twitter...');
+    logger.info(`   📋 Search params: keyword="${keyword}", limit=${limit}, mode=${searchMode}`);
+    
+    for await (const tweet of scraper.searchTweets(keyword, limit, searchMode)) {
       results.push(tweet);
-      rawCount++;
-      
-      // Stop if we've reached the limit
-      if (rawCount >= limit) {
-        break;
-      }
     }
     
-    logger.info(`   📥 Fetched ${rawCount} raw tweets`);
+    logger.info(`   📥 Fetched ${results.length} raw tweets`);
     
-    if (rawCount === 0) {
+    if (results.length === 0) {
+      if (cycleTLSAvailable && cycleTLSExit) await cycleTLSExit();
       logger.info('   📭 No tweets found on Twitter');
       return [];
     }
     
-    // 6. Apply time window filtering
+    // 7. Apply time window filtering
     const recentWindowMinutes = campaign.recentWindowMinutes ?? CONFIG.recentWindowMinutes;
     const cutoffTime = Date.now() - (recentWindowMinutes * 60 * 1000);
     
@@ -158,11 +113,12 @@ async function scrapeTweetsForCampaign(campaign) {
     logger.info(`   ⏰ Time filter (last ${recentWindowMinutes} min): ${recentTweets.length} tweets`);
     
     if (recentTweets.length === 0) {
+      if (cycleTLSAvailable && cycleTLSExit) await cycleTLSExit();
       logger.info('   📭 No tweets within time window');
       return [];
     }
     
-    // 7. Apply follower count filtering and normalize tweet objects
+    // 8. Apply follower count filtering and normalize tweet objects
     const minFollowerCount = campaign.minFollowerCount ?? CONFIG.minFollowers;
     const normalizedTweets = [];
     
@@ -177,7 +133,7 @@ async function scrapeTweetsForCampaign(campaign) {
         // Filter by minimum follower count
         if (followers >= minFollowerCount) {
           // Normalize tweet object
-          const normalizedTweet = {
+          normalizedTweets.push({
             tweetId: tweet.id || tweet.id_str,
             campaignId: campaign.id,
             author: tweet.username,
@@ -191,19 +147,19 @@ async function scrapeTweetsForCampaign(campaign) {
             language: tweet.lang ?? 'en',
             verified: profile?.isVerified ?? false,
             profileUrl: `https://twitter.com/${tweet.username}`
-          };
-          
-          normalizedTweets.push(normalizedTweet);
+          });
         } else {
-          logger.debug(`   ⚠️  Skipped @${tweet.username} (${followers} followers < ${minFollowerCount})`);
+          logger.debug(`   Skipped @${tweet.username} (${followers} followers < ${minFollowerCount})`);
         }
         
       } catch (profileError) {
-        logger.warn({ 
-          username: tweet.username, 
-          error: profileError.message 
-        }, `   ⚠️  Failed to fetch profile for @${tweet.username}`);
+        logger.warn(`   Profile fetch failed for @${tweet.username}: ${profileError.message}`);
       }
+    }
+    
+    // 9. Cleanup CycleTLS
+    if (cycleTLSAvailable && cycleTLSExit) {
+      await cycleTLSExit();
     }
     
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -211,13 +167,18 @@ async function scrapeTweetsForCampaign(campaign) {
     logger.info(`   ✅ Real scraping complete: ${normalizedTweets.length} qualified tweets`);
     logger.info(`   ⏱️  Duration: ${duration}s`);
     logger.info('   📊 Filtering Summary:');
-    logger.info(`      Raw tweets: ${rawCount}`);
+    logger.info(`      Raw tweets: ${results.length}`);
     logger.info(`      After time filter: ${recentTweets.length}`);
     logger.info(`      After follower filter: ${normalizedTweets.length}`);
     
     return normalizedTweets;
     
   } catch (error) {
+    // Cleanup on error
+    try {
+      if (cycleTLSAvailable && cycleTLSExit) await cycleTLSExit();
+    } catch {}
+    
     logger.error({ 
       campaignId: campaign.id, 
       error: error.message,
@@ -378,29 +339,17 @@ export function buildSearchQuery(campaign) {
 }
 
 /**
- * Cleanup function to close scraper and CycleTLS
+ * Cleanup function to close CycleTLS connections
  */
 export async function cleanup() {
   try {
-    if (scraperInstance) {
-      logger.info('🧹 Cleaning up Twitter scraper...');
-      
-      // Cleanup CycleTLS if it was used
-      if (cycleTLSAvailable && cycleTLSInstance) {
-        try {
-          await cycleTLSInstance.exit();
-        } catch (e) {
-          logger.debug('CycleTLS cleanup error (non-critical):', e.message);
-        }
-      }
-      
-      scraperInstance = null;
-      cycleTLSInstance = null;
-      isLoggedIn = false;
-      logger.info('✅ Scraper cleanup complete');
+    if (cycleTLSAvailable && cycleTLSExit) {
+      logger.info('🧹 Cleaning up CycleTLS connections...');
+      await cycleTLSExit();
+      logger.info('✅ Cleanup complete');
     }
   } catch (error) {
-    logger.warn({ error: error.message }, 'Warning during scraper cleanup');
+    logger.debug('CycleTLS cleanup error (non-critical):', error.message);
   }
 }
 
