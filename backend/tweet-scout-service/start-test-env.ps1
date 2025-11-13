@@ -6,8 +6,9 @@ Write-Host "🚀 Tweet Scout Service - Test Environment" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Navigate to project root
-$projectRoot = "C:\Projects\Cursor\agentic-traffic-booster"
+# Navigate to project root (2 levels up from this script)
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 Set-Location $projectRoot
 
 Write-Host "📍 Project root: $projectRoot" -ForegroundColor White
