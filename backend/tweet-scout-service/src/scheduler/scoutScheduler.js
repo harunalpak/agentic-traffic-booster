@@ -42,7 +42,7 @@ async function scoutTweetsForAllCampaigns() {
         logger.info(`   Mode: ${campaign.mode || 'SEMI_AUTO'}`);
         logger.info(`   Status: ${campaign.status}`);
         
-        // Build search query
+        // Build search query for validation
         const query = buildSearchQuery(campaign);
         
         if (!query || query.trim() === '') {
@@ -52,8 +52,8 @@ async function scoutTweetsForAllCampaigns() {
         
         logger.info(`   Query: "${query}"`);
         
-        // 3. Scrape tweets
-        const tweets = await scrapeTweets(query, MAX_TWEETS_PER_CAMPAIGN);
+        // 3. Scrape tweets using real Twitter scraping (pass full campaign object)
+        const tweets = await scrapeTweets(query, MAX_TWEETS_PER_CAMPAIGN, campaign);
         totalTweetsFound += tweets.length;
         
         if (tweets.length === 0) {
