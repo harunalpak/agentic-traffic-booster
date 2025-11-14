@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { ExternalLink, Copy, Check, X, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { formatRelativeTime, formatFullDate } from "@/lib/date-utils";
 
 interface Task {
   id: number;
@@ -180,9 +181,6 @@ export default function TasksPage() {
     );
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
 
   // Client-side filtering
   const filteredTasks = tasks.filter((task) => {
@@ -280,9 +278,12 @@ export default function TasksPage() {
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                  <div 
+                    className="flex items-center gap-2 text-sm text-muted-foreground mb-4 cursor-help"
+                    title={formatFullDate(task.createdAt)}
+                  >
                     <Clock className="w-4 h-4" />
-                    {formatDate(task.createdAt)}
+                    {formatRelativeTime(task.createdAt)}
                   </div>
 
                   {/* Original Tweet */}
