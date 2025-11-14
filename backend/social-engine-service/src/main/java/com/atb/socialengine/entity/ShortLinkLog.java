@@ -42,6 +42,14 @@ public class ShortLinkLog {
     private Integer clickCount = 0;
     
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        if (this.clickCount == null) {
+            this.clickCount = 0;
+        }
+    }
 }
 

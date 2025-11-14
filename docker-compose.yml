@@ -134,28 +134,6 @@ services:
       - atb-network
     restart: unless-stopped
 
-  # TWEET SCOUT SERVICE (Node.js)
-  tweet-scout-service:
-    build: ./backend/tweet-scout-service
-    container_name: atb-tweet-scout
-    depends_on:
-      kafka:
-        condition: service_healthy
-      campaign-service:
-        condition: service_started
-    environment:
-      KAFKA_BROKERS: kafka:29092
-      CAMPAIGN_SERVICE_URL: http://campaign-service:8082
-      SCRAPE_INTERVAL_MINUTES: 30
-      MAX_TWEETS_PER_CAMPAIGN: 10
-      USE_MOCK_TWEETS: "true"
-      RUN_ON_STARTUP: "true"
-      LOG_LEVEL: info
-      NODE_ENV: production
-    networks:
-      - atb-network
-    restart: unless-stopped
-
   # FRONTEND (Next.js)
   frontend:
     build: ./frontend

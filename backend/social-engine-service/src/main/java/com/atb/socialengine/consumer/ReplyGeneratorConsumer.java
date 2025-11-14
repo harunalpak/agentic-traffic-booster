@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ReplyGeneratorConsumer - Generates intelligent replies for discovered tweets
@@ -81,29 +82,32 @@ public class ReplyGeneratorConsumer {
             
             // 3. Generate short link
             String shortLink = shortLinkService.generateShortLink(
-                product.getAmazonUrl(),
+                product.getProductUrl(),
                 product.getId(),
                 campaign.getId()
             );
             
             log.info("🔗 Generated short link: {}", shortLink);
             
-            // 4. Prepare hashtags
-            List<String> hashtags = campaign.getHashtags() != null ? 
-                campaign.getHashtags() : new ArrayList<>();
-            
-            // 5. Generate reply using ChatGPT
-            log.info("🤖 Calling ChatGPT to generate reply...");
-            String replyText = chatGPTService.generateResponse(
+            // 4. Generate reply using ChatGPT with risk analysis
+            log.info("🤖 Calling ChatGPT to generate reply with safety analysis...");
+            Map<String, Object> aiResponse = chatGPTService.generateResponseWithAnalysis(
                 tweet.getText(),
                 product.getTitle(),
                 shortLink,
-                hashtags
+                new ArrayList<>() // Empty list - ChatGPT generates contextual hashtags
             );
             
-            log.info("✅ ChatGPT reply: {}", replyText);
+            String replyText = (String) aiResponse.get("replyText");
+            Boolean isRisky = (Boolean) aiResponse.get("isRisky");
+            String riskReason = (String) aiResponse.get("riskReason");
             
-            // 6. Create ReplySuggestion
+            log.info("✅ ChatGPT reply: {}", replyText);
+            if (isRisky != null && isRisky) {
+                log.warn("⚠️  RISKY CONTENT DETECTED: {}", riskReason);
+            }
+            
+            // 5. Create ReplySuggestion with risk analysis
             ReplySuggestion suggestion = ReplySuggestion.builder()
                 .tweetId(tweet.getTweetId())
                 .campaignId(campaign.getId())
@@ -113,7 +117,9 @@ public class ReplyGeneratorConsumer {
                 .tweetAuthor(tweet.getAuthor())
                 .tweetText(tweet.getText())
                 .tweetUrl(tweet.getUrl())
-                .mode(campaign.getMode())
+                .mode(campaign.getMode() != null ? campaign.getMode() : "SEMI_AUTO") // Default to SEMI_AUTO if not set
+                .isRisky(isRisky)
+                .riskReason(riskReason)
                 .build();
             
             // 7. ✅ Publish to Kafka (generated_replies topic) instead of direct DB insert

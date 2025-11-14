@@ -30,5 +30,9 @@ public class ReplySuggestion {
     
     // Campaign context
     private String mode; // AUTO or SEMI_AUTO
+    
+    // Content safety analysis
+    private Boolean isRisky;          // true if tweet is potentially risky/controversial
+    private String riskReason;        // explanation of why it's risky (if applicable)
 }
 

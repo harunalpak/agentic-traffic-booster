@@ -53,11 +53,23 @@ public class Task {
     @Column(name = "short_link")
     private String shortLink;
     
+    @Column(name = "is_risky")
+    private Boolean isRisky;           // true if tweet is potentially risky/controversial
+    
+    @Column(name = "risk_reason", columnDefinition = "TEXT")
+    private String riskReason;         // explanation of why it's risky (if applicable)
+    
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
     
     @PreUpdate
     protected void onUpdate() {

@@ -11,6 +11,6 @@ public interface ShortLinkLogRepository extends JpaRepository<ShortLinkLog, Long
     
     Optional<ShortLinkLog> findByShortUrl(String shortUrl);
     
-    Optional<ShortLinkLog> findByOriginalUrlAndCampaignId(String originalUrl, Long campaignId);
+    Optional<ShortLinkLog> findFirstByOriginalUrlAndCampaignId(String originalUrl, Long campaignId);
 }
 

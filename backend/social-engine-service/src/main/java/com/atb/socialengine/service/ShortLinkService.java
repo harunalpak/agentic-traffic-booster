@@ -53,7 +53,7 @@ public class ShortLinkService {
         try {
             // Check if we already have a short link for this URL and campaign
             Optional<ShortLinkLog> existing = shortLinkLogRepository
-                    .findByOriginalUrlAndCampaignId(originalUrl, campaignId);
+                    .findFirstByOriginalUrlAndCampaignId(originalUrl, campaignId);
             
             if (existing.isPresent()) {
                 log.info("Reusing existing short link: {}", existing.get().getShortUrl());

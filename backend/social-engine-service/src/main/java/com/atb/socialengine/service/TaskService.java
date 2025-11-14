@@ -42,6 +42,8 @@ public class TaskService {
                 .tweetUrl(suggestion.getTweetUrl())
                 .confidenceScore(suggestion.getConfidence())
                 .shortLink(suggestion.getShortLink())
+                .isRisky(suggestion.getIsRisky())
+                .riskReason(suggestion.getRiskReason())
                 .build();
         
         task = taskRepository.save(task);
@@ -53,10 +55,31 @@ public class TaskService {
     }
     
     /**
+     * Get all tasks
+     */
+    public List<Task> getAllTasks() {
+        return taskRepository.findAll();
+    }
+    
+    /**
+     * Get task by ID
+     */
+    public java.util.Optional<Task> getTaskById(Long id) {
+        return taskRepository.findById(id);
+    }
+    
+    /**
      * Get all pending tasks
      */
     public List<Task> getPendingTasks() {
         return taskRepository.findByStatus("PENDING");
+    }
+    
+    /**
+     * Get tasks by status
+     */
+    public List<Task> getTasksByStatus(String status) {
+        return taskRepository.findByStatus(status);
     }
     
     /**
@@ -92,6 +115,29 @@ public class TaskService {
     @Transactional
     public void rejectTask(Long taskId) {
         updateTaskStatus(taskId, "REJECTED");
+    }
+    
+    /**
+     * Get task statistics
+     */
+    public java.util.Map<String, Object> getTaskStatistics() {
+        List<Task> allTasks = taskRepository.findAll();
+        
+        long pending = allTasks.stream().filter(t -> "PENDING".equals(t.getStatus())).count();
+        long approved = allTasks.stream().filter(t -> "APPROVED".equals(t.getStatus())).count();
+        long rejected = allTasks.stream().filter(t -> "REJECTED".equals(t.getStatus())).count();
+        long posted = allTasks.stream().filter(t -> "POSTED".equals(t.getStatus())).count();
+        long risky = allTasks.stream().filter(t -> Boolean.TRUE.equals(t.getIsRisky())).count();
+        
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("total", allTasks.size());
+        stats.put("pending", pending);
+        stats.put("approved", approved);
+        stats.put("rejected", rejected);
+        stats.put("posted", posted);
+        stats.put("risky", risky);
+        
+        return stats;
     }
 }
 
