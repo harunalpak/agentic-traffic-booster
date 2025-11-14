@@ -6,7 +6,7 @@ import { CONFIG } from '../config/search.config.js';
 import logger from '../utils/logger.js';
 
 // Get interval from environment (default: every 30 minutes)
-const SCRAPE_INTERVAL_MINUTES = parseInt(process.env.SCRAPE_INTERVAL_MINUTES || '5', 10);
+const SCRAPE_INTERVAL_MINUTES = parseInt(process.env.SCRAPE_INTERVAL_MINUTES || '15', 10);
 
 /**
  * Main tweet scouting function

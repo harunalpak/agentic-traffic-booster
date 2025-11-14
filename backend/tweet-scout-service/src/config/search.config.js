@@ -14,7 +14,7 @@ export const SEARCH_MODES = {
 // Default search configuration
 export const CONFIG = {
   // Maximum number of tweets to fetch per scan
-  maxTweetsPerScan: 20,
+  maxTweetsPerScan: 50,
   
   // Time window for recent tweets (in minutes)
   // Only tweets within this window will be considered
