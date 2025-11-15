@@ -141,23 +141,25 @@ export default function CampaignsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 animate-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Campaigns</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Campaigns
+          </h1>
+          <p className="text-muted-foreground text-lg">
             Manage your automated traffic campaigns
           </p>
         </div>
         <Link href="/campaigns/new">
-          <Button>
+          <Button className="gradient-primary hover:opacity-90 transition-smooth shadow-modern">
             <Plus className="mr-2 h-4 w-4" />
             New Campaign
           </Button>
         </Link>
       </div>
 
-      <Card>
+      <Card className="shadow-modern-lg border-0 overflow-hidden">
         <CardContent className="p-0">
           <Table>
             <TableHeader>

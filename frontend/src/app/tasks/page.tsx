@@ -174,6 +174,16 @@ export default function TasksPage() {
       POSTED: "outline",
     };
     
+    // Special styling for POSTED status
+    if (status === "POSTED") {
+      return (
+        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-800 flex items-center gap-1">
+          <Check className="w-3 h-3" />
+          {status}
+        </Badge>
+      );
+    }
+    
     return (
       <Badge variant={variants[status] || "default"}>
         {status}
@@ -195,16 +205,18 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-8 animate-in">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Reply Tasks</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Reply Tasks
+        </h1>
+        <p className="text-muted-foreground text-lg">
           Manage AI-generated tweet replies
         </p>
       </div>
 
       {/* Filters */}
-      <Card className="p-6 mb-6">
+      <Card className="p-6 mb-6 shadow-modern border-0 hover-lift">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Status</label>
@@ -258,12 +270,12 @@ export default function TasksPage() {
       {/* Tasks List */}
       <div className="space-y-4">
         {filteredTasks.length === 0 ? (
-          <Card className="p-12 text-center">
-            <p className="text-muted-foreground">No tasks found</p>
+          <Card className="p-12 text-center shadow-modern border-0">
+            <p className="text-muted-foreground text-lg">No tasks found</p>
           </Card>
         ) : (
           filteredTasks.map((task) => (
-            <Card key={task.id} className="p-6">
+            <Card key={task.id} className="p-6 shadow-modern hover-lift border-0 transition-smooth">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -299,7 +311,7 @@ export default function TasksPage() {
                   {/* Generated Reply */}
                   <div className="mb-4">
                     <p className="text-sm font-medium mb-2">Generated Reply:</p>
-                    <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded relative">
+                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 p-4 rounded-lg relative backdrop-blur-sm">
                       <p className="text-sm pr-20">{task.replyText}</p>
                       <Button
                         size="sm"
@@ -327,7 +339,7 @@ export default function TasksPage() {
                   <Button
                     size="sm"
                     onClick={() => openTweetReply(task.tweetId, task.replyText)}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 gradient-primary hover:opacity-90 transition-smooth shadow-modern"
                   >
                     <ExternalLink className="w-4 h-4" />
                     Reply on Twitter
@@ -338,7 +350,7 @@ export default function TasksPage() {
                       <Button
                         size="sm"
                         onClick={() => markPosted(task.id)}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                        className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 transition-smooth shadow-modern"
                       >
                         <Check className="w-4 h-4" />
                         Mark Posted
@@ -347,7 +359,7 @@ export default function TasksPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => discardTask(task.id)}
-                        className="flex items-center gap-2 border-red-600 text-red-600 hover:bg-red-50"
+                        className="flex items-center gap-2 border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30 transition-smooth"
                       >
                         <X className="w-4 h-4" />
                         Discard

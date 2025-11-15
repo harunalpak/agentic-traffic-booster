@@ -65,24 +65,26 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Products</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Products
+          </h1>
+          <p className="text-muted-foreground text-lg">
             Manage your product catalog
           </p>
         </div>
         <Link href="/products/new">
-          <Button>
+          <Button className="gradient-primary hover:opacity-90 transition-smooth shadow-modern">
             <Plus className="mr-2 h-4 w-4" />
             Add Product
           </Button>
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="shadow-modern-lg border-0 overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20">
           <div className="flex items-center justify-between">
             <CardTitle>Product List</CardTitle>
             <div className="relative w-64">
@@ -92,7 +94,7 @@ export default function ProductsPage() {
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                className="pl-9 transition-smooth focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
