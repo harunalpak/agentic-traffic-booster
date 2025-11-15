@@ -192,13 +192,18 @@ export default function TasksPage() {
   };
 
 
-  // Client-side filtering
-  const filteredTasks = tasks.filter((task) => {
-    const matchesStatus = statusFilter === "all" || task.status === statusFilter;
-    const matchesCampaign = campaignFilter === "all" || task.campaignId.toString() === campaignFilter;
-    const matchesMode = modeFilter === "all" || task.mode === modeFilter;
-    return matchesStatus && matchesCampaign && matchesMode;
-  });
+  // Client-side filtering and sorting
+  const filteredTasks = tasks
+    .filter((task) => {
+      const matchesStatus = statusFilter === "all" || task.status === statusFilter;
+      const matchesCampaign = campaignFilter === "all" || task.campaignId.toString() === campaignFilter;
+      const matchesMode = modeFilter === "all" || task.mode === modeFilter;
+      return matchesStatus && matchesCampaign && matchesMode;
+    })
+    .sort((a, b) => {
+      // Sort by createdAt descending (newest first)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   if (loading) {
     return <div className="p-8">Loading tasks...</div>;
