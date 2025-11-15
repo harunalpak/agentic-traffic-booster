@@ -143,4 +143,14 @@ public class TaskController {
         Map<String, Object> stats = taskService.getTaskStatistics();
         return ResponseEntity.ok(stats);
     }
+    
+    /**
+     * Get campaign statistics for last 24 hours
+     */
+    @GetMapping("/stats/campaign/{campaignId}")
+    public ResponseEntity<Map<String, Object>> getCampaignStats(@PathVariable Long campaignId) {
+        log.info("Getting statistics for campaign {}", campaignId);
+        Map<String, Object> stats = taskService.getCampaignStatistics(campaignId);
+        return ResponseEntity.ok(stats);
+    }
 }

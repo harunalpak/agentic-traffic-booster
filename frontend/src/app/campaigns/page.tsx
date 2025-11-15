@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Plus, Play, Pause, Trash2, Loader2 } from "lucide-react";
 import { useCampaigns, usePauseCampaign, useResumeCampaign, useDeleteCampaign } from "@/hooks/useCampaigns";
 import { useProductsLite } from "@/hooks/useProductsLite";
+import { useMultipleCampaignStats } from "@/hooks/useCampaignStats";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,10 +43,18 @@ export default function CampaignsPage() {
 
   // Sort campaigns by ID to maintain consistent order
   const sortedCampaigns = campaigns ? [...campaigns].sort((a, b) => b.id - a.id) : [];
+  
+  // Get campaign IDs for stats
+  const campaignIds = sortedCampaigns.map(c => c.id);
+  const { data: campaignStats } = useMultipleCampaignStats(campaignIds);
 
   const getProductName = (productId: number) => {
     const product = products?.find((p) => p.id === productId);
     return product?.title || `Product #${productId}`;
+  };
+
+  const getProduct = (productId: number) => {
+    return products?.find((p) => p.id === productId);
   };
 
   const handlePause = async (id: number) => {
@@ -167,7 +176,7 @@ export default function CampaignsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Channel</TableHead>
-                <TableHead>Daily Limit</TableHead>
+                <TableHead>Stats (24h)</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Start Date</TableHead>
                 <TableHead>End Date</TableHead>
@@ -178,13 +187,54 @@ export default function CampaignsPage() {
               {sortedCampaigns.map((campaign: Campaign) => (
                 <TableRow key={campaign.id}>
                   <TableCell className="font-medium">{campaign.name}</TableCell>
-                  <TableCell>{getProductName(campaign.productId)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const product = getProduct(campaign.productId);
+                        return (
+                          <>
+                            {product?.imageUrl ? (
+                              <img
+                                src={product.imageUrl}
+                                alt={product.title}
+                                className="h-10 w-10 rounded-md object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs text-muted-foreground">No img</span>
+                              </div>
+                            )}
+                            <span className="font-medium">{getProductName(campaign.productId)}</span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge className={channelColors[campaign.channel]}>
                       {campaign.channel}
                     </Badge>
                   </TableCell>
-                  <TableCell>{campaign.dailyLimit}</TableCell>
+                  <TableCell>
+                    {campaignStats && campaignStats[campaign.id] ? (
+                      <div className="flex flex-col gap-0.5 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Found:</span>
+                          <span className="font-medium">{campaignStats[campaign.id].totalFound}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Posted:</span>
+                          <span className="font-medium text-green-600">{campaignStats[campaign.id].posted}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground">Rejected:</span>
+                          <span className="font-medium text-red-600">{campaignStats[campaign.id].rejected}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Loading...</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge className={statusColors[campaign.status]}>
                       {campaign.status}

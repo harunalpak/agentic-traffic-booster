@@ -3,6 +3,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 // API base URLs
 const PRODUCT_API_URL = process.env.NEXT_PUBLIC_PRODUCT_API || 'http://localhost:8080/api';
 const CAMPAIGN_API_URL = process.env.NEXT_PUBLIC_CAMPAIGN_API || 'http://localhost:8082/api';
+const SOCIAL_ENGINE_API_URL = process.env.NEXT_PUBLIC_SOCIAL_ENGINE_API || 'http://localhost:8083/api';
 
 // Helper to create axios instance with interceptors
 const createApiClient = (baseURL: string) => {
@@ -51,6 +52,7 @@ const createApiClient = (baseURL: string) => {
 // Export separate clients for each microservice
 export const apiProducts = createApiClient(PRODUCT_API_URL);
 export const apiCampaigns = createApiClient(CAMPAIGN_API_URL);
+export const apiSocialEngine = createApiClient(SOCIAL_ENGINE_API_URL);
 
 // Default export for backward compatibility
 export default apiProducts;

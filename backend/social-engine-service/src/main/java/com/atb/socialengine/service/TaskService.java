@@ -139,5 +139,32 @@ public class TaskService {
         
         return stats;
     }
+    
+    /**
+     * Get campaign statistics for last 24 hours
+     */
+    public java.util.Map<String, Object> getCampaignStatistics(Long campaignId) {
+        java.time.LocalDateTime twentyFourHoursAgo = java.time.LocalDateTime.now().minusHours(24);
+        
+        long totalFound = taskRepository.countByCampaignIdAndCreatedAtAfter(campaignId, twentyFourHoursAgo);
+        long posted = taskRepository.countByCampaignIdAndStatusAndCreatedAtAfter(campaignId, "POSTED", twentyFourHoursAgo);
+        long rejected = taskRepository.countByCampaignIdAndStatusAndCreatedAtAfter(campaignId, "REJECTED", twentyFourHoursAgo);
+        long pending = taskRepository.countByCampaignIdAndStatusAndCreatedAtAfter(campaignId, "PENDING", twentyFourHoursAgo);
+        long approved = taskRepository.countByCampaignIdAndStatusAndCreatedAtAfter(campaignId, "APPROVED", twentyFourHoursAgo);
+        
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("campaignId", campaignId);
+        stats.put("period", "24h");
+        stats.put("totalFound", totalFound);
+        stats.put("posted", posted);
+        stats.put("rejected", rejected);
+        stats.put("pending", pending);
+        stats.put("approved", approved);
+        
+        log.info("Campaign {} statistics (24h): total={}, posted={}, rejected={}, pending={}, approved={}", 
+                campaignId, totalFound, posted, rejected, pending, approved);
+        
+        return stats;
+    }
 }
 
