@@ -1,6 +1,7 @@
 import { Scraper } from '@the-convocation/twitter-scraper';
 import logger from '../utils/logger.js';
 import { CONFIG, SEARCH_MODES, resolveSearchMode, getSearchModeName } from '../config/search.config.js';
+import { filterUnseenTweets, markTweetsAsSeen } from './tweetCache.js';
 
 // Try to import CycleTLS from twitter-scraper package
 let cycleTLSFetch = null;
@@ -163,8 +164,10 @@ async function scrapeTweetsForCampaign(campaign) {
         // Filter by minimum follower count
         if (followers >= minFollowerCount) {
           // Normalize tweet object
+          const tweetId = tweet.id || tweet.id_str;
           normalizedTweets.push({
-            tweetId: tweet.id || tweet.id_str,
+            id: tweetId,  // Add id for cache compatibility
+            tweetId: tweetId,
             campaignId: campaign.id,
             author: tweet.username,
             text: tweet.text,
@@ -248,8 +251,20 @@ export async function scrapeTweets(query, limit = 10, campaign = null) {
       
       // Check if real scraping succeeded
       if (realTweets && realTweets.length > 0) {
-        logger.info(`✅ Real scraping successful: ${realTweets.length} tweets`);
-        return realTweets;
+        logger.info(`✅ Real scraping successful: ${realTweets.length} tweets found`);
+        
+        // Filter out tweets we've seen in the last 24 hours
+        const unseenTweets = await filterUnseenTweets(realTweets);
+        
+        if (unseenTweets.length > 0) {
+          // Mark these tweets as seen to prevent duplicate processing
+          await markTweetsAsSeen(unseenTweets, campaign.id);
+          logger.info(`✅ Returning ${unseenTweets.length} new tweets after deduplication`);
+        } else {
+          logger.info('ℹ️  All tweets were already processed in the last 24 hours');
+        }
+        
+        return unseenTweets;
       }
       
       // Check if real scraping returned empty array (valid but no results)
@@ -272,6 +287,7 @@ export async function scrapeTweets(query, limit = 10, campaign = null) {
     
     for await (const tweet of iterator) {
       const tweetData = {
+        id: tweet.id || tweet.id_str,
         tweetId: tweet.id || tweet.id_str,
         author: tweet.username || tweet.screen_name,
         text: tweet.text || tweet.full_text,
@@ -291,7 +307,20 @@ export async function scrapeTweets(query, limit = 10, campaign = null) {
     }
     
     logger.info(`✅ Found ${results.length} tweets (legacy mode)`);
-    return results;
+    
+    // Apply deduplication for legacy mode too
+    const unseenTweets = await filterUnseenTweets(results);
+    
+    if (unseenTweets.length > 0 && unseenTweets.length < results.length) {
+      logger.info(`🔍 Filtered out ${results.length - unseenTweets.length} duplicate tweets`);
+    }
+    
+    // Mark as seen (use campaign id if available, otherwise use 0 for legacy)
+    if (unseenTweets.length > 0) {
+      await markTweetsAsSeen(unseenTweets, campaign?.id || 0);
+    }
+    
+    return unseenTweets;
     
   } catch (error) {
     logger.error({ query, error: error.message }, '❌ Error scraping tweets');

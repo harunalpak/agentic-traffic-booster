@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { getActiveCampaigns } from '../services/campaignClient.js';
 import { scrapeTweets, buildSearchQuery } from '../services/tweetScraper.js';
 import { publishTweets } from '../services/tweetPublisher.js';
+import { getCacheStats } from '../services/tweetCache.js';
 import { CONFIG } from '../config/search.config.js';
 import logger from '../utils/logger.js';
 
@@ -96,6 +97,9 @@ async function scoutTweetsForAllCampaigns() {
   // Summary
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
   
+  // Get cache statistics
+  const cacheStats = await getCacheStats();
+  
   logger.info('========================================');
   logger.info('📊 Tweet Scout Summary:');
   logger.info(`   Campaigns Processed: ${campaignsProcessed}`);
@@ -103,6 +107,10 @@ async function scoutTweetsForAllCampaigns() {
   logger.info(`   Total Tweets Found: ${totalTweetsFound}`);
   logger.info(`   Total Tweets Published: ${totalTweetsPublished}`);
   logger.info(`   Duration: ${duration}s`);
+  logger.info('----------------------------------------');
+  logger.info('🗄️  Cache Statistics:');
+  logger.info(`   Cached Tweets (24h): ${cacheStats.totalCachedTweets}`);
+  logger.info(`   Cache TTL: ${cacheStats.ttlHours} hours`);
   logger.info('========================================');
   logger.info(`⏰ Next execution in ${SCRAPE_INTERVAL_MINUTES} minutes`);
   logger.info('========================================');

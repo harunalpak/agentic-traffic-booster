@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Play, Pause, Trash2, Loader2 } from "lucide-react";
+import { Plus, Play, Pause, Trash2, Loader2, ExternalLink } from "lucide-react";
 import { useCampaigns, usePauseCampaign, useResumeCampaign, useDeleteCampaign } from "@/hooks/useCampaigns";
 import { useProductsLite } from "@/hooks/useProductsLite";
 import { useMultipleCampaignStats } from "@/hooks/useCampaignStats";
@@ -191,7 +191,9 @@ export default function CampaignsPage() {
                     <div className="flex items-center gap-3">
                       {(() => {
                         const product = getProduct(campaign.productId);
-                        return (
+                        const productUrl = product?.productUrl;
+                        
+                        const content = (
                           <>
                             {product?.imageUrl ? (
                               <img
@@ -204,8 +206,25 @@ export default function CampaignsPage() {
                                 <span className="text-xs text-muted-foreground">No img</span>
                               </div>
                             )}
-                            <span className="font-medium">{getProductName(campaign.productId)}</span>
+                            <div className="flex items-center gap-1">
+                              <span className="font-medium group-hover:underline">{getProductName(campaign.productId)}</span>
+                              {productUrl && <ExternalLink className="h-3 w-3 opacity-50 group-hover:opacity-100 transition-opacity" />}
+                            </div>
                           </>
+                        );
+                        
+                        return productUrl ? (
+                          <a
+                            href={productUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 hover:opacity-70 transition-all cursor-pointer group"
+                            title={`View product: ${product?.title}`}
+                          >
+                            {content}
+                          </a>
+                        ) : (
+                          content
                         );
                       })()}
                     </div>

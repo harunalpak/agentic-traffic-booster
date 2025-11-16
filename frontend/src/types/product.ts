@@ -32,6 +32,7 @@ export interface ProductLite {
   id: number;
   title: string;
   imageUrl?: string;
+  productUrl?: string;
   price?: number;
 }
 

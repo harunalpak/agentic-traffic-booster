@@ -22,6 +22,7 @@
     "axios": "^1.6.2",
     "cycletls": "^2.0.5",
     "dotenv": "^16.3.1",
+    "ioredis": "^5.8.2",
     "kafkajs": "^2.2.4",
     "node-cron": "^3.0.3",
     "pino": "^8.17.2",
