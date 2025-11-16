@@ -47,13 +47,12 @@ public class ChatGPTService {
      * 
      * @param tweetText The original tweet text
      * @param productTitle The product to promote
-     * @param shortLink The short link to the product
-     * @param hashtags Unused (kept for backward compatibility) - ChatGPT generates contextual hashtags
+     * @param shortLink Optional short link to the product (may be appended in ~1/3 of replies)
      * @return Map with replyText, isRisky, and riskReason
      */
-    public Map<String, Object> generateResponseWithAnalysis(String tweetText, String productTitle, String shortLink, List<String> hashtags) {
+    public Map<String, Object> generateResponseWithAnalysis(String tweetText, String productTitle, String shortLink) {
         try {
-            String prompt = buildPrompt(tweetText, productTitle, shortLink);
+            String prompt = buildPrompt(tweetText, productTitle);
             
             log.info("Generating ChatGPT response with safety analysis for tweet: {}", tweetText.substring(0, Math.min(50, tweetText.length())));
             
@@ -101,7 +100,20 @@ public class ChatGPTService {
             // Parse JSON response
             Map<String, Object> result = parseAnalysisResponse(reply);
             
-            log.info("ChatGPT reply generated: {}", ((String)result.get("replyText")).substring(0, Math.min(50, ((String)result.get("replyText")).length())));
+            // 1) Extra safety: strip any links/hashtags if model still adds them
+            String rawReplyText = (String) result.get("replyText");
+            String sanitizedReplyText = sanitizeReply(rawReplyText);
+            
+            // 2) Optional soft CTA to bio
+            String withCta = maybeAddSoftCta(sanitizedReplyText);
+            
+            // 3) In ~1/3 of replies, append the product short link at the end
+            String finalReply = maybeAddShortLink(withCta, shortLink);
+            
+            result.put("replyText", finalReply);
+            
+            log.info("ChatGPT reply generated (sanitized + optional link): {}", 
+                     finalReply.substring(0, Math.min(80, finalReply.length())));
             log.info("Safety analysis - Risky: {}, Reason: {}", result.get("isRisky"), result.get("riskReason"));
             
             return result;
@@ -109,7 +121,11 @@ public class ChatGPTService {
         } catch (Exception e) {
             log.error("Error generating ChatGPT response", e);
             Map<String, Object> fallback = new HashMap<>();
-            fallback.put("replyText", generateFallbackResponse(productTitle, shortLink, hashtags));
+            String fallbackText = generateFallbackResponse(productTitle);
+            // Apply same CTA + optional link logic to fallback
+            fallbackText = maybeAddSoftCta(sanitizeReply(fallbackText));
+            fallbackText = maybeAddShortLink(fallbackText, shortLink);
+            fallback.put("replyText", fallbackText);
             fallback.put("isRisky", false);
             fallback.put("riskReason", null);
             return fallback;
@@ -119,8 +135,8 @@ public class ChatGPTService {
     /**
      * Legacy method for backward compatibility
      */
-    public String generateResponse(String tweetText, String productTitle, String shortLink, List<String> hashtags) {
-        Map<String, Object> result = generateResponseWithAnalysis(tweetText, productTitle, shortLink, hashtags);
+    public String generateResponse(String tweetText, String productTitle, String shortLink) {
+        Map<String, Object> result = generateResponseWithAnalysis(tweetText, productTitle, shortLink);
         return (String) result.get("replyText");
     }
     
@@ -153,18 +169,17 @@ public class ChatGPTService {
     
     /**
      * Build the user prompt with tweet context and product info
+     * 
+     * NOTE: Replies MUST be link-free and hashtag-free. Soft CTA should point to bio.
      */
-    private String buildPrompt(String tweetText, String productTitle, String shortLink) {
+    private String buildPrompt(String tweetText, String productTitle) {
         StringBuilder prompt = new StringBuilder();
         
         prompt.append("Original Tweet:\n");
         prompt.append("\"").append(tweetText).append("\"\n\n");
         
-        prompt.append("Product to Recommend:\n");
+        prompt.append("Product to keep in mind (for your own context only, DO NOT mention brand names explicitly):\n");
         prompt.append("\"").append(productTitle).append("\"\n\n");
-        
-        prompt.append("Product Link:\n");
-        prompt.append(shortLink).append("\n\n");
         
         prompt.append("Your Tasks:\n\n");
         
@@ -173,24 +188,37 @@ public class ChatGPTService {
         prompt.append("   - Consider: political content, offensive language, sensitive topics, polarizing issues\n");
         prompt.append("   - If risky, briefly explain why in 1-2 sentences\n\n");
         
-        prompt.append("2. WRITE THE REPLY:\n");
-        prompt.append("   - Fun, engaging, and authentic\n");
-        prompt.append("   - Naturally recommend the product (don't force it!)\n");
-        prompt.append("   - Generate 2-3 creative hashtags that fit the tweet's vibe\n");
-        prompt.append("   - Keep under 250 characters total\n");
-        prompt.append("   - Include the product link at the end\n\n");
+        prompt.append("2. WRITE THE REPLY (VERY IMPORTANT RULES):\n");
+        prompt.append("   - Sound like a normal human replying, not a brand or advertiser\n");
+        prompt.append("   - Directly react to the original tweet (comment on what they said)\n");
+        prompt.append("   - Use a casual, conversational tone (can be friendly, funny, or neutral)\n");
+        prompt.append("   - KEEP IT SHORT: 80–180 characters total\n");
+        prompt.append("   - DO NOT include ANY URL or link (no Etsy, Amazon, tracking, short links, etc.)\n");
+        prompt.append("   - DO NOT include ANY hashtags\n");
+        prompt.append("   - DO NOT use sales language: no 'check this out', 'buy now', 'get this', 'here's the product', etc.\n");
+        prompt.append("   - Optional soft call-to-action at the end that points to the bio, WITHOUT links. Examples:\n");
+        prompt.append("       * \"More is in my bio 😊\"\n");
+        prompt.append("       * \"I share the designs in my bio btw!\"\n");
+        prompt.append("       * \"If you like this stuff, I put some in my bio 🦃\"\n");
+        prompt.append("       * \"I dropped some holiday ideas in my bio!\"\n");
+        prompt.append("   - You can randomly choose to:\n");
+        prompt.append("       * include a soft CTA or not\n");
+        prompt.append("       * use 0, 1, or 2 emojis (never more than 2)\n");
+        prompt.append("       * vary tone: sometimes friendly, sometimes funny, sometimes neutral\n");
+        prompt.append("   - Avoid repeating the same sentence structure across different replies.\n\n");
         
-        prompt.append("Important Rules:\n");
-        prompt.append("❌ Don't sound like a salesperson or advertiser\n");
-        prompt.append("❌ Don't use corporate language or buzzwords\n");
-        prompt.append("❌ Don't be pushy or overly promotional\n");
-        prompt.append("✅ Be funny, authentic, and helpful\n");
-        prompt.append("✅ Match the tone and energy of the original tweet\n");
-        prompt.append("✅ Make it feel like a friend's recommendation\n\n");
+        prompt.append("Important Hard Rules:\n");
+        prompt.append("❌ NO links of any kind\n");
+        prompt.append("❌ NO hashtags\n");
+        prompt.append("❌ NO affiliate or promotional wording\n");
+        prompt.append("❌ NO copy-paste feeling or template-like replies\n");
+        prompt.append("✅ Feels like a real person reacting to the tweet\n");
+        prompt.append("✅ Light, natural, and context-aware\n");
+        prompt.append("✅ Optional, gentle bio reference instead of a direct product pitch\n\n");
         
         prompt.append("REQUIRED JSON FORMAT:\n");
         prompt.append("{\n");
-        prompt.append("  \"replyText\": \"Your reply here with link and hashtags\",\n");
+        prompt.append("  \"replyText\": \"Your short, conversational reply here (no links, no hashtags)\",\n");
         prompt.append("  \"isRisky\": true/false,\n");
         prompt.append("  \"riskReason\": \"Brief explanation if risky, otherwise null\"\n");
         prompt.append("}\n\n");
@@ -204,29 +232,137 @@ public class ChatGPTService {
      * System prompt defining the AI's role and behavior
      */
     private String getSystemPrompt() {
-        return "You are a creative, fun social media assistant who replies to tweets naturally. " +
+        return "You are a creative, human-like social media assistant who replies to tweets naturally. " +
                "Your job is to: " +
-               "1) Reply to tweets in an entertaining, engaging, and authentic way " +
-               "2) Subtly recommend relevant Amazon Handmade products when it fits naturally " +
-               "3) Generate creative hashtags that match the tweet's topic and tone " +
-               "4) Keep replies conversational and human-like - NO corporate speak " +
-               "5) Add value to the conversation while gently promoting the product " +
-               "Your replies should feel like they're from a cool friend, not a salesperson.";
+               "1) React to tweets in a short, conversational, and authentic way (80–180 characters) " +
+               "2) NEVER include links or hashtags in replies " +
+               "3) Avoid any sales or promotional language – you are not an ad, you are a person talking " +
+               "4) Optionally add a very soft call-to-action that mentions the bio (e.g. 'I put some in my bio btw') " +
+               "5) Vary tone and structure so replies do not look templated or repetitive. " +
+               "Your replies should always feel like a real person replying, not marketing copy.";
     }
     
     /**
      * Generate a simple fallback response if ChatGPT fails
+     * (Must also respect no-links, no-hashtags policy)
      */
-    private String generateFallbackResponse(String productTitle, String shortLink, List<String> hashtags) {
-        StringBuilder fallback = new StringBuilder();
-        fallback.append("You might like this: ").append(productTitle).append(" ");
-        fallback.append(shortLink);
+    private String generateFallbackResponse(String productTitle) {
+        // Simple, safe, link-free, hashtag-free backup reply
+        String[] variants = new String[] {
+            "Holiday vibes lately, been working on some fun designs in my bio 😊",
+            "This season has me inspired, dropped a few ideas in my bio!",
+            "Been in a creative mood too lol, put some of it in my bio.",
+            "All this holiday energy is real – I parked a few things in my bio if you're curious."
+        };
         
-        if (hashtags != null && !hashtags.isEmpty()) {
-            fallback.append(" ").append(String.join(" ", hashtags));
+        int idx = (int) (Math.random() * variants.length);
+        return variants[idx];
+    }
+
+    /**
+     * Ensure reply text obeys hard rules:
+     * - No links or URLs
+     * - No hashtags
+     * - Reasonable length (80–180 chars if possible)
+     */
+    private String sanitizeReply(String replyText) {
+        if (replyText == null) {
+            return "";
         }
-        
-        return fallback.toString();
+
+        String sanitized = replyText;
+
+        // Remove URLs (http/https)
+        sanitized = sanitized.replaceAll("https?://\\S+", "");
+
+        // Remove bare domains (example.com, bit.ly/xyz, etc.)
+        sanitized = sanitized.replaceAll("\\b\\S+\\.(com|net|org|io|co|ly|gg|shop|store)(/\\S*)?", "");
+
+        // Remove hashtags
+        sanitized = sanitized.replaceAll("#\\w+", "");
+
+        // Remove leftover multiple spaces
+        sanitized = sanitized.replaceAll("\\s+", " ").trim();
+
+        // Enforce max length ~180 chars (but don't cut mid-word too harshly)
+        int maxLength = 180;
+        if (sanitized.length() > maxLength) {
+            int cutIndex = sanitized.lastIndexOf(' ', maxLength);
+            if (cutIndex == -1) {
+                cutIndex = maxLength;
+            }
+            sanitized = sanitized.substring(0, cutIndex).trim();
+        }
+
+        return sanitized;
+    }
+
+    /**
+     * Optionally append a soft CTA pointing to bio, without links or hashtags.
+     * Adds variation and keeps replies natural.
+     */
+    private String maybeAddSoftCta(String replyText) {
+        if (replyText == null || replyText.isEmpty()) {
+            return replyText;
+        }
+
+        // If reply already mentions bio, don't add another CTA
+        String lower = replyText.toLowerCase();
+        if (lower.contains("bio")) {
+            return replyText;
+        }
+
+        // 60% chance to add a CTA
+        if (Math.random() > 0.6) {
+            return replyText;
+        }
+
+        String[] ctas = new String[] {
+            "More is in my bio 😊",
+            "I share the designs in my bio btw!",
+            "If you like this stuff, I put some in my bio 🦃",
+            "I dropped some holiday ideas in my bio!"
+        };
+
+        String cta = ctas[(int) (Math.random() * ctas.length)];
+
+        String combined;
+        if (replyText.endsWith("!") || replyText.endsWith("?") || replyText.endsWith(".")) {
+            combined = replyText + " " + cta;
+        } else {
+            combined = replyText + " — " + cta;
+        }
+
+        // Final safety pass to respect max length
+        return sanitizeReply(combined);
+    }
+
+    /**
+     * With ~1/3 probability, append the short link to the reply.
+     * Never modifies the core text (which is already sanitized).
+     */
+    private String maybeAddShortLink(String replyText, String shortLink) {
+        if (shortLink == null || shortLink.isEmpty()) {
+            return replyText;
+        }
+
+        // Roughly 1/3 chance to include a link
+        if (Math.random() > (1.0 / 3.0)) {
+            return replyText;
+        }
+
+        // Keep it simple: just add the short link at the end
+        String combined;
+        if (replyText == null || replyText.isEmpty()) {
+            combined = shortLink;
+        } else if (replyText.endsWith("!") || replyText.endsWith("?") || replyText.endsWith(".")) {
+            combined = replyText + " " + shortLink;
+        } else {
+            combined = replyText + " - " + shortLink;
+        }
+
+        // Do NOT run sanitizeReply again here; we want to keep the link.
+        return combined;
     }
 }
 

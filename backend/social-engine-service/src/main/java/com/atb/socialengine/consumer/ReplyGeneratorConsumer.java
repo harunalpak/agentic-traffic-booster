@@ -80,7 +80,7 @@ public class ReplyGeneratorConsumer {
             
             log.info("✅ Product: {}", product.getTitle());
             
-            // 3. Generate short link
+            // 3. Generate short link (still stored for tracking/clicks, but NOT used in reply text)
             String shortLink = shortLinkService.generateShortLink(
                 product.getProductUrl(),
                 product.getId(),
@@ -94,8 +94,7 @@ public class ReplyGeneratorConsumer {
             Map<String, Object> aiResponse = chatGPTService.generateResponseWithAnalysis(
                 tweet.getText(),
                 product.getTitle(),
-                shortLink,
-                new ArrayList<>() // Empty list - ChatGPT generates contextual hashtags
+                shortLink
             );
             
             String replyText = (String) aiResponse.get("replyText");
