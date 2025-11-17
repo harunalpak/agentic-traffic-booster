@@ -49,6 +49,7 @@ public class ShortLinkService {
      * @param campaignId The campaign ID
      * @return The short URL
      */
+    @SuppressWarnings("null")
     public String generateShortLink(String originalUrl, Long productId, Long campaignId) {
         try {
             // Check if we already have a short link for this URL and campaign
@@ -102,6 +103,7 @@ public class ShortLinkService {
     /**
      * Create a short link using Bitly API
      */
+    @SuppressWarnings("null")
     private String createBitlyLink(String originalUrl) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

@@ -50,6 +50,7 @@ public class ChatGPTService {
      * @param shortLink Optional short link to the product (may be appended in ~1/3 of replies)
      * @return Map with replyText, isRisky, and riskReason
      */
+    @SuppressWarnings("null")
     public Map<String, Object> generateResponseWithAnalysis(String tweetText, String productTitle, String shortLink) {
         try {
             String prompt = buildPrompt(tweetText, productTitle);

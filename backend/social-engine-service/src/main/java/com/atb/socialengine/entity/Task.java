@@ -3,6 +3,7 @@ package com.atb.socialengine.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -36,6 +37,7 @@ public class Task {
     private String mode; // AUTO or SEMI_AUTO
     
     @Column(nullable = false)
+    @Default
     private String status = "PENDING"; // PENDING, APPROVED, REJECTED, POSTED
     
     @Column(name = "tweet_author")

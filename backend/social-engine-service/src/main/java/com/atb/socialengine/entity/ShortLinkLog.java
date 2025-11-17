@@ -3,6 +3,7 @@ package com.atb.socialengine.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -39,6 +40,7 @@ public class ShortLinkLog {
     private String linkProvider; // BITLY, FALLBACK
     
     @Column(name = "click_count")
+    @Default
     private Integer clickCount = 0;
     
     @Column(name = "created_at", nullable = false)

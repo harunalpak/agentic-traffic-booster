@@ -45,6 +45,7 @@ public class CampaignService {
      * Create a new campaign with default status DRAFT
      */
     @Transactional
+    @SuppressWarnings("null")
     public CampaignResponse createCampaign(CampaignRequest request) {
         // Validate dates
         if (request.getEndDate() != null && request.getEndDate().isBefore(request.getStartDate())) {
@@ -131,6 +132,7 @@ public class CampaignService {
      * Delete a campaign
      */
     @Transactional
+    @SuppressWarnings("null")
     public void deleteCampaign(Long id) {
         Campaign campaign = findCampaignById(id);
         campaignRepository.delete(campaign);
@@ -172,6 +174,7 @@ public class CampaignService {
     /**
      * Helper method to find campaign by ID or throw exception
      */
+    @SuppressWarnings("null")
     private Campaign findCampaignById(Long id) {
         return campaignRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));

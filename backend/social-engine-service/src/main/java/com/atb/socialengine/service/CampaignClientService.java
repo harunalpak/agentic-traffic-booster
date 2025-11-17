@@ -25,6 +25,7 @@ public class CampaignClientService {
     /**
      * Fetch all active campaigns
      */
+    @SuppressWarnings("null")
     public List<CampaignDto> getActiveCampaigns() {
         try {
             log.info("Fetching active campaigns from: {}", campaignServiceUrl);
@@ -51,6 +52,7 @@ public class CampaignClientService {
     /**
      * Fetch a specific campaign by ID
      */
+    @SuppressWarnings("null")
     public CampaignDto getCampaignById(Long campaignId) {
         try {
             log.info("Fetching campaign {} from: {}", campaignId, campaignServiceUrl);

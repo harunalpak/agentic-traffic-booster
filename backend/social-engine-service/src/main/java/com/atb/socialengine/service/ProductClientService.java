@@ -23,6 +23,7 @@ public class ProductClientService {
     /**
      * Fetch product information by ID
      */
+    @SuppressWarnings("null")
     public ProductDto getProductById(Long productId) {
         try {
             log.info("Fetching product {} from: {}", productId, productServiceUrl);

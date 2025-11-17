@@ -24,6 +24,7 @@ public class TaskService {
      * Create a new task from a reply suggestion
      */
     @Transactional
+    @SuppressWarnings("null")
     public Long createTask(ReplySuggestion suggestion) {
         // Check if task already exists for this tweet
         if (taskRepository.existsByTweetId(suggestion.getTweetId())) {
@@ -64,6 +65,7 @@ public class TaskService {
     /**
      * Get task by ID
      */
+    @SuppressWarnings("null")
     public java.util.Optional<Task> getTaskById(Long id) {
         return taskRepository.findById(id);
     }
@@ -93,6 +95,7 @@ public class TaskService {
      * Update task status
      */
     @Transactional
+    @SuppressWarnings("null")
     public void updateTaskStatus(Long taskId, String status) {
         taskRepository.findById(taskId).ifPresent(task -> {
             task.setStatus(status);
