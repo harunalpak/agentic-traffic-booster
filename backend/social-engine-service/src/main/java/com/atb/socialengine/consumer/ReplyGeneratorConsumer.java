@@ -16,8 +16,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,6 +47,7 @@ public class ReplyGeneratorConsumer {
         groupId = "${spring.kafka.consumer.group-id}",
         containerFactory = "tweetKafkaListenerContainerFactory"
     )
+    @SuppressWarnings("null")
     public void processNewTweet(Tweet tweet, Acknowledgment acknowledgment) {
         try {
             log.info("========================================");

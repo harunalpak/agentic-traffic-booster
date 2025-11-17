@@ -83,6 +83,7 @@ public class KafkaConfig {
     }
     
     @Bean
+    @SuppressWarnings("null")
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
@@ -105,6 +106,7 @@ public class KafkaConfig {
     }
     
     @Bean
+    @SuppressWarnings("null")
     public ConcurrentKafkaListenerContainerFactory<String, Tweet> tweetKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Tweet> factory = 
                 new ConcurrentKafkaListenerContainerFactory<>();
@@ -132,6 +134,7 @@ public class KafkaConfig {
     }
     
     @Bean
+    @SuppressWarnings("null")
     public ConcurrentKafkaListenerContainerFactory<String, ReplySuggestion> replySuggestionKafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, ReplySuggestion> factory = 
                 new ConcurrentKafkaListenerContainerFactory<>();
