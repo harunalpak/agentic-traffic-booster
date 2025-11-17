@@ -67,6 +67,35 @@ public class CampaignService {
     }
 
     /**
+     * Update an existing campaign
+     */
+    @Transactional
+    public CampaignResponse updateCampaign(Long id, CampaignRequest request) {
+        Campaign campaign = findCampaignById(id);
+
+        // Only prevent updates for COMPLETED campaigns
+        if (campaign.getStatus() == CampaignStatus.COMPLETED) {
+            throw new InvalidOperationException("COMPLETED campaigns cannot be updated");
+        }
+
+        // Validate dates
+        if (request.getEndDate() != null && request.getEndDate().isBefore(request.getStartDate())) {
+            throw new InvalidOperationException("End date cannot be before start date");
+        }
+
+        campaign.setProductId(request.getProductId());
+        campaign.setName(request.getName());
+        campaign.setChannel(request.getChannel());
+        campaign.setStartDate(request.getStartDate());
+        campaign.setEndDate(request.getEndDate());
+        campaign.setDailyLimit(request.getDailyLimit());
+        campaign.setConfig(request.getConfig());
+
+        Campaign updatedCampaign = campaignRepository.save(campaign);
+        return mapToResponse(updatedCampaign);
+    }
+
+    /**
      * Pause a campaign (change status to PAUSED)
      */
     @Transactional

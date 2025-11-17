@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Play, Pause, Trash2, Loader2, ExternalLink } from "lucide-react";
+import { Plus, Play, Pause, Trash2, Loader2, ExternalLink, Edit } from "lucide-react";
 import { useCampaigns, usePauseCampaign, useResumeCampaign, useDeleteCampaign } from "@/hooks/useCampaigns";
 import { useProductsLite } from "@/hooks/useProductsLite";
 import { useMultipleCampaignStats } from "@/hooks/useCampaignStats";
@@ -271,6 +271,11 @@ export default function CampaignsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Link href={`/campaigns/${campaign.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
                       {campaign.status === "ACTIVE" && (
                         <Button
                           variant="outline"

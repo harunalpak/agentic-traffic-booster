@@ -34,6 +34,18 @@ export function useCreateCampaign() {
   });
 }
 
+export function useUpdateCampaign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: number; payload: CampaignCreateRequest }) =>
+      (await apiCampaigns.put(`/campaigns/${id}`, payload)).data,
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: keys.list() });
+      qc.invalidateQueries({ queryKey: keys.detail(variables.id) });
+    },
+  });
+}
+
 export function usePauseCampaign() {
   const qc = useQueryClient();
   return useMutation({

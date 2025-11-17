@@ -47,6 +47,17 @@ public class CampaignController {
     }
 
     /**
+     * PUT /api/campaigns/{id} - Update campaign
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<CampaignResponse> updateCampaign(
+            @PathVariable Long id,
+            @Valid @RequestBody CampaignRequest request) {
+        CampaignResponse campaign = campaignService.updateCampaign(id, request);
+        return ResponseEntity.ok(campaign);
+    }
+
+    /**
      * PATCH /api/campaigns/{id}/pause - Pause campaign
      */
     @PatchMapping("/{id}/pause")
